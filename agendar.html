@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento de Horários</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        textarea {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <label for="lab">Escolha o laboratorio:</label>
+    <select id="lab" name="lab">
+        <option value="lab1">Laboratorio 1</option>
+        <option value="lab2">Laboratorio 2</option>
+        <option value="lab3">Laboratorio 3</option>
+    </select>
+</div>
+<div>
+    <label for="data">Data:</label>
+    <input type="date" id="data">
+</div>
+<div id="horarioInicial">
+    <select id="horarioI"></select>
+</div>
+<div id="horarioFinal">
+    <select id="horarioF" disabled></select>
+</div>
+
+<button onclick="agendarHorario()">Agendar</button>
+
+<script>
+    function agendarHorario() {
+        var lab = document.getElementById('lab').value;
+        var data = document.getElementById('data').value;
+        var horarioInicial = document.getElementById('horarioI').value;
+        var horarioFinal = document.getElementById('horarioF').value;
+
+        fetch('http://localhost:3000/agendar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lab: lab,
+                data: data,
+                horarioInicial: horarioInicial,
+                horarioFinal: horarioFinal
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.error) {
+                alert('Erro ao agendar: ' + data.error);
+            } else {
+                alert('Agendamento realizado com sucesso!');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao agendar:', error);
+            alert('Erro ao agendar.');
+        });
+    }
+
+    function preencherHorarios() {
+        var selectHorarioInicial = document.getElementById('horarioI');
+        var horaInicial = 6;
+        var minutosInicial = 0;
+
+        for (var i = horaInicial; i <= 22; i++) {
+            for (var j = minutosInicial; j < 60; j += 30) {
+                var minutosFormatados = ('0' + j).slice(-2);
+                var horaFormatada = ('0' + i).slice(-2);
+                var horario = `${horaFormatada}:${minutosFormatados}`;
+                selectHorarioInicial.innerHTML += `<option value="${horario}">${horario}</option>`;
+            }
+            minutosInicial = 0;
+        }
+
+        document.getElementById('horarioI').addEventListener('change', function () {
+            var selectHorarioFinal = document.getElementById('horarioF');
+            selectHorarioFinal.innerHTML = '';
+            var selectedHorario = this.value;
+            var horarioParts = selectedHorario.split(':');
+            var hora = parseInt(horarioParts[0]);
+            var minutos = parseInt(horarioParts[1]);
+
+            for (var i = hora; i <= 22; i++) {
+                for (var j = minutos + 30; j < 60; j += 30) {
+                    var minutosFormatatados = ('0' + j).slice(-2);
+                    selectHorarioFinal.innerHTML += `<option value="${i}:${minutosFormatatados}">${i}:${minutosFormatatados}</option>`;
+                }
+                minutos = 0;
+            }
+
+            selectHorarioFinal.removeAttribute('disabled');
+        });
+
+        // Aqui você deve obter os horários já agendados da tabela 'agendamento' no banco de dados
+        // e então, desabilitar as opções correspondentes no seu HTML.
+        fetch('http://localhost:3000/horariosAgendados', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Supondo que a resposta tenha um formato como { horariosAgendados: ['10:00', '14:30', ...] }
+            const horariosAgendados = data.horariosAgendados;
+
+            // Desabilitar as opções correspondentes nos selects
+            horariosAgendados.forEach(horario => {
+                const optionInicial = document.querySelector(`#horarioI option[value="${horario}"]`);
+                const optionFinal = document.querySelector(`#horarioF option[value="${horario}"]`);
+
+                if (optionInicial) optionInicial.disabled = true;
+                if (optionFinal) optionFinal.disabled = true;
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao obter horários agendados:', error);
+        });
+    }
+
+    // Chame a função preencherHorarios assim que a página carregar
+    window.onload = preencherHorarios;
+</script>
+
+</body>
+</html>

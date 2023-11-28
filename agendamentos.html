@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Agendamentos</title>
+</head>
+<body>
+
+<h1>Lista de Agendamentos</h1>
+
+<ul id="agendamentos-list"></ul>
+
+<script>
+    var dataAtual = new Date();
+
+    var ano = dataAtual.getFullYear();
+    var mes = (dataAtual.getMonth() + 1).toString().padStart(2, '0'); 
+    var dia = dataAtual.getDate().toString().padStart(2, '0');
+
+    var dataFormatada = `${ano}-${mes}-${dia}`;
+
+    console.log("Data atual: " + dataFormatada);
+
+    fetch('http://localhost:3000/agendamentos', { method: 'GET' })
+        .then(response => response.json())
+        .then(data => {
+            const agendamentosList = document.getElementById('agendamentos-list');
+            data.agendamentos.forEach(agendamento => {
+                const dataAgendamento = agendamento.data.split('T')[0];
+
+                if (dataAgendamento === dataFormatada) {
+                    const listItem = document.createElement('li');
+                    const dataAgendamento = new Date(agendamento.data);
+                    const dataFormatadaAgendamento = new Intl.DateTimeFormat('pt-BR').format(dataAgendamento);
+                    listItem.textContent = `Laboratório: ${agendamento.laboratorio}, Data: ${dataFormatadaAgendamento}, Horário Inicial: ${agendamento.horario_inicial}, Horário Final: ${agendamento.horario_final}`;
+                    agendamentosList.appendChild(listItem);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao obter agendamentos:', error);
+            alert('Erro ao obter agendamentos.');
+        });
+</script>
+
+</body>
+</html>
